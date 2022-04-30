@@ -20,13 +20,13 @@ const user = require("./routes/userRoute");
 //import les routes des professeur --professeur.
 const moyen = require("./routes/moyenRoute");
 
-//import les routes des Responsabble --professeur.
-// const responsable = require("./routes/responsableRoute");
+//import les routes des deliberation --responsable.
+const deliberation = require("./routes/deliberationRoute");
 
 app.use("/", reclamMatiere);
 app.use("/", reclamPv);
 app.use("/", user);
-app.use("/", moyen);
+app.use("/", deliberation);
 // app.use("/responsable", responsable);
 
 //Error MiddleWear

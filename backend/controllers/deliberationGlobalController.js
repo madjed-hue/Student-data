@@ -1,44 +1,38 @@
 const catchAsyncError = require("../middleware/catchAsyncError");
-const Moyen = require("../models/matiereMoyenModel");
+const Deliberation = require("../models/deliberationGlobaleModel");
 const ErrorHandeler = require("../utils/errorHandler");
 
-//Create affichage des moyens
-exports.createMoyenAffichage = catchAsyncError(async (req, res, next) => {
+//Create deliberation
+exports.createDeliberation = catchAsyncError(async (req, res, next) => {
   req.body.user = req.user.id;
-  const { name, departement, branch, matiere } = req.body;
+  const { name, departement, branch } = req.body;
 
   const details = {
     user: req.user._id,
     name: name,
     departement: departement,
     branch: branch,
-    matiere: matiere,
   };
-  const moyen = await Moyen.create(req.body);
+  const deliberation = await Deliberation.create(req.body);
   res.status(201).json({
     success: true,
-    moyen,
+    deliberation,
     details,
   });
 });
 
 //Update affichage des moyens
-exports.updateMoyenAffichage = catchAsyncError(async (req, res, next) => {
-  const affichageId = req.params.id;
-  const moyen = await Moyen.findById(affichageId);
-  if (!moyen) {
+exports.updateDeliberation = catchAsyncError(async (req, res, next) => {
+  const deliberationId = req.params.id;
+  const deliberation = await Deliberation.findById(deliberationId);
+  if (!deliberation) {
     return next(new ErrorHandeler("Affichage Pas trouvé", 404));
   }
-  const theUser = moyen.details.user;
+  const theUser = deliberation.details.user;
   const isSameUser = req.user._id.toString();
-  const theMatiere = moyen.details.matiere;
-  const isSameMatiere = req.body.details.matiere;
-  if (
-    theUser.toString() === isSameUser &&
-    theMatiere.toString() === isSameMatiere
-  ) {
-    let currentNotes = await moyen.moyens;
-    let fullNotes = await req.body.moyens;
+  if (theUser.toString() === isSameUser) {
+    let currentNotes = await deliberation.notes;
+    let fullNotes = await req.body.notes;
 
     let matchedResult = fullNotes.filter((o1) =>
       currentNotes.some((o2) => o1.studentID === o2.studentID)
@@ -49,7 +43,6 @@ exports.updateMoyenAffichage = catchAsyncError(async (req, res, next) => {
     );
 
     if (matchedResult) {
-      console.log(matchedResult);
       currentNotes.forEach((note) => {
         if (note.toString().includes(note.studentID)) {
           fullNotes.forEach((std) => {
@@ -73,54 +66,54 @@ exports.updateMoyenAffichage = catchAsyncError(async (req, res, next) => {
       });
     }
   }
-  await moyen.save({ validateBeforeSave: false });
+  await deliberation.save({ validateBeforeSave: false });
   res.status(200).json({ success: true });
 });
 
-//Get all Affich of single matiere --prof
-exports.getAffichage = catchAsyncError(async (req, res, next) => {
-  const moyen = await Moyen.findById(req.params.id);
-  if (!moyen) {
+//Get Deliberation Details --Responsable
+exports.getDeliberation = catchAsyncError(async (req, res, next) => {
+  const deliberation = await Deliberation.findById(req.params.id);
+  if (!deliberation) {
     return next(new ErrorHandeler("Affichage Pas trouvé", 404));
   }
   res.status(200).json({
     success: true,
-    moyen,
+    deliberation,
   });
 });
 
-//Delete affich of single matiere --prof
-exports.deleteAffichage = catchAsyncError(async (req, res, next) => {
-  const moyen = await Moyen.findById(req.params.id);
-  if (!moyen) {
+//Delete Deliberation --prof
+exports.deleteDeliberation = catchAsyncError(async (req, res, next) => {
+  const deliberation = await Deliberation.findById(req.params.id);
+  if (!deliberation) {
     return res.status(500).json({
       success: false,
       message: "Affichage introuvable",
     });
   }
-  await moyen.remove();
+  await deliberation.remove();
   res.status(200).json({
     success: true,
     message: "Affichage supprimée avec succès",
   });
 });
 
-//get Student Records from all affichages
-exports.getStudentResult = catchAsyncError(async (req, res, next) => {
+//get Student note from Deliberation
+exports.getStudentNote = catchAsyncError(async (req, res, next) => {
   req.body.user = req.user.id;
   const details = {
     user: req.user._id,
     name: req.user.name,
     theId: req.user.theId,
   };
-  const moyen = await Moyen.find();
-  const data = moyen.map((result) => {
+  const deliberation = await Deliberation.find();
+  const data = deliberation.map((result) => {
     return result;
   });
   const sudentResult = data.map((note) => {
     const result = {
-      notes: note.moyens,
-      moduleName: note.details,
+      notes: note.notes,
+      details: note.details,
     };
     const isSameStudent = result.notes.find(
       (std) => std.studentID.toString() === details.theId.toString()
@@ -128,8 +121,8 @@ exports.getStudentResult = catchAsyncError(async (req, res, next) => {
     console.log(isSameStudent);
     if (isSameStudent) {
       const finalData = {
-        moduleName: note.details.matiere,
-        profName: note.details.name,
+        trimester: note.details.trimester,
+        responsableName: note.details.name,
         studentID: isSameStudent.studentID,
         studentName: isSameStudent.studentName,
         laNote: isSameStudent.laNote,
